@@ -29,6 +29,9 @@ CURFILES=$(ls .)
 echo moving "${CURFILES} to $BUILD_DIR/data"
 mkdir data
 mv $CURFILES data
+if [ -f data/Procfile ]; then
+    mv data/Procfile Procfile
+fi
 
 # read repo to pull into app directory
 REPO=$(cat $BUILD_DIR/.heroku-private-build.lst)
