@@ -1,6 +1,0 @@
-#!/bin/sh
-# call the apps release script
-set -o errexit    # always exit on error
-
-$1/app/bin/release
-exit $?

@@ -1,50 +1,22 @@
 #!/usr/bin/env bash
-echo in comile script
-####### Configure environment
 
-set -o errexit    # always exit on error
-set -o pipefail   # don't ignore exit codes when piping output
-set -o posix      # more strict failures in subshells
-#set -x          # enable debugging
+set -Eeuo pipefail
 
-# Configure directories
-bp_dir=$(cd $(dirname $0); cd ..; pwd)
 BUILD_DIR=${1:-}
 CACHE_DIR=${2:-}
 ENV_DIR=${3:-}
 
-echo build user is `whoami`
-ls -lrta ~
-
-# first we need to set up ssh
-sh scripts/add-sshkey.sh $ENV_DIR
-
-echo "ENV_DIR"
-echo  $ENV_DIR
-ls $ENV_DIR
-
-# first move files in build directory to data directory
-cd $BUILD_DIR
-CURFILES=$(ls .)
-echo moving "${CURFILES} to $BUILD_DIR/data"
-mkdir data
-mv $CURFILES data
-if [ -f data/Procfile ]; then
-    mv data/Procfile Procfile
-fi
-
-# read repo to pull into app directory
-REPO=$(cat $BUILD_DIR/.heroku-private-build.lst)
-echo Pulling $REPO
-git clone $REPO $BUILD_DIR/app
-ls -lrt $BUILD_DIR/app
-
-#call the apps  compile script of the downloaded repository.
-if [ -f $1/app/bin/compile ]; then
-    echo "Calling app compile script $BUILD_DIR/app/bin/compile"
-    sh $BUILD_DIR/app/bin/compile  "$BUILD_DIR" "$CACHE_DIR" "$ENV_DIR"
-    exit $?
-else
-    echo "No compile file in app"
-    exit 1
-fi
+for repo_url in $(cat "${BUILD_DIR}/.heroku-private-buildpacks") ; do
+    tmpdir=$(mktemp --directory -XXXXXXXX)
+    git clone "${repo_url}" "${tmpdir}"
+    cd "${tmpdir}"
+    if [ -f ./bin/compile ] ; then
+        echo "Calling compile script for ${repo_url}..."
+        bash ./bin/compile "${BUILD_DIR}" "${CACHE_DIR}" "${ENV_DIR}"
+        rm -rf "${tmpdir}"
+    else
+        echo "No compile script in ${repo_url} buildpack. Aborting..."
+        rm -rf "${tmpdir}"
+        exit 1
+    fi
+done
