@@ -1,7 +1,7 @@
 =========================
 heroku-private-buildpacks
 =========================
-This supports simplified loading a buildpacks from a private git repository / repositories.
+This supports simplified loading buildpacks from a private git repository / repositories.
 
 It hooks in only to the ``compile`` stage of each buildpack.
 
