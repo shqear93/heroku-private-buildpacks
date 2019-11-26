@@ -7,7 +7,7 @@ CACHE_DIR=${2:-}
 ENV_DIR=${3:-}
 
 for repo_url in $(cat "${BUILD_DIR}/.heroku-private-buildpacks") ; do
-    tmpdir=$(mktemp --directory -XXXXXXXX)
+    tmpdir=$(mktemp --directory private-buildpack-XXXXXXXX)
     git clone "${repo_url}" "${tmpdir}"
     cd "${tmpdir}"
     if [ -f ./bin/compile ] ; then
