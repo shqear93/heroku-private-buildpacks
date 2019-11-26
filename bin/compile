@@ -11,6 +11,7 @@ for repo_url in $(cat "${BUILD_DIR}/.heroku-private-buildpacks") ; do
     echo "Repo: ${repo_url}"
     git clone "${repo_url}" "${tmpdir}"
     cd "${tmpdir}"
+    echo "Last repo commit: $(git rev-parse HEAD)"
     if [ -f ./bin/compile ] ; then
         echo "Calling compile script for ${repo_url}..."
         bash ./bin/compile "${BUILD_DIR}" "${CACHE_DIR}" "${ENV_DIR}"
