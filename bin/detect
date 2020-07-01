@@ -2,9 +2,5 @@
 
 set -Eeuo pipefail
 
-if [ -f "${1}/.heroku-private-buildpacks" ]; then
-    echo "Private buildpacks"
-    exit 0
-else
-    exit 1
-fi
+echo "Private buildpacks"
+exit 0
