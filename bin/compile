@@ -16,6 +16,21 @@ if [ -f "${1}/.heroku-private-buildpacks" ]; then
       if [ -f ./bin/compile ] ; then
           echo "Calling compile script for ${repo_url}..."
           bash ./bin/compile "${BUILD_DIR}" "${CACHE_DIR}" "${ENV_DIR}"
+
+          if [ -f ./bin/test-compile ] ; then
+              echo "Calling test-compile script for ${repo_url}..."
+              bash ./bin/test-compile "${BUILD_DIR}" "${CACHE_DIR}" "${ENV_DIR}"
+          else
+            echo "test-compile script not found in repo ${repo_url}... Skipping.."
+          fi
+
+          if [ -f ./bin/test ] ; then
+              echo "Calling test script for ${repo_url}..."
+              bash ./bin/test "${BUILD_DIR}" "${ENV_DIR}"
+          else
+            echo "test script not found in repo ${repo_url}... Skipping.."
+          fi
+
           rm -rf "${tmpdir}"
       else
           echo "No compile script in ${repo_url} buildpack. Aborting..."
