@@ -2,42 +2,49 @@
 
 set -Eeuo pipefail
 
+if [ ! -f "${1}/.heroku-private-buildpacks" ]; then
+  echo ".heroku-private-buildpacks file not found, skipping"
+  exit 0
+fi
+
 BUILD_DIR=${1:-}
 CACHE_DIR=${2:-}
 ENV_DIR=${3:-}
 
-if [ -f "${1}/.heroku-private-buildpacks" ]; then
-  for repo_url in $(cat "${BUILD_DIR}/.heroku-private-buildpacks") ; do
-      tmpdir=$(mktemp --directory private-buildpack-XXXXXXXX)
-      echo "Repo: ${repo_url}"
-      git clone "${repo_url}" "${tmpdir}"
-      cd "${tmpdir}"
-      echo "Last repo commit: $(git rev-parse HEAD)"
-      if [ -f ./bin/compile ] ; then
-          echo "Calling compile script for ${repo_url}..."
-          bash ./bin/compile "${BUILD_DIR}" "${CACHE_DIR}" "${ENV_DIR}"
+PRIVATE_BUILDPACKS=$(cat "${BUILD_DIR}/.heroku-private-buildpacks")
 
-          if [ -f ./bin/test-compile ] ; then
-              echo "Calling test-compile script for ${repo_url}..."
-              bash ./bin/test-compile "${BUILD_DIR}" "${CACHE_DIR}" "${ENV_DIR}"
-          else
-            echo "test-compile script not found in repo ${repo_url}... Skipping.."
-          fi
+execute_buildpack () {
+  if [ -f ./bin/compile ] ; then
+      echo "Calling compile script for ${repo_url}..."
+      bash ./bin/compile "${BUILD_DIR}" "${CACHE_DIR}" "${ENV_DIR}"
 
-          if [ -f ./bin/test ] ; then
-              echo "Calling test script for ${repo_url}..."
-              bash ./bin/test "${BUILD_DIR}" "${ENV_DIR}"
-          else
-            echo "test script not found in repo ${repo_url}... Skipping.."
-          fi
-
-          rm -rf "${tmpdir}"
+      if [ -f ./bin/test-compile ] ; then
+          echo "Calling test-compile script for ${repo_url}..."
+          bash ./bin/test-compile "${BUILD_DIR}" "${CACHE_DIR}" "${ENV_DIR}"
       else
-          echo "No compile script in ${repo_url} buildpack. Aborting..."
-          rm -rf "${tmpdir}"
-          exit 1
+        echo "test-compile script not found in repo ${repo_url}... Skipping.."
       fi
-  done
-else
-  echo ".heroku-private-buildpacks file not found, skipping"
-fi
+
+      if [ -f ./bin/test ] ; then
+          echo "Calling test script for ${repo_url}..."
+          bash ./bin/test "${BUILD_DIR}" "${ENV_DIR}"
+      else
+        echo "test script not found in repo ${repo_url}... Skipping.."
+      fi
+
+      rm -rf "${tmpdir}"
+  else
+      echo "No compile script in ${repo_url} buildpack. Aborting..."
+      rm -rf "${tmpdir}"
+      exit 1
+  fi
+}
+
+for repo_url in "$PRIVATE_BUILDPACKS" ; do
+  tmpdir=$(mktemp --directory private-buildpack-XXXXXXXX)
+  echo "Repo: ${repo_url}"
+  git clone "${repo_url}" "${tmpdir}"
+  cd "${tmpdir}"
+  echo "Last repo commit: $(git rev-parse HEAD)"
+  execute_buildpack
+done
